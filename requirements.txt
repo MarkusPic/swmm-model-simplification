@@ -1,0 +1,15 @@
+swmm-api[full]
+# which includes
+# - pandas
+# - numpy
+# - tqdm
+shapely
+geopandas
+networkx
+scipy
+
+fastparquet
+matplotlib
+SWMM_xsections_shape_generator
+pyproj
+Rtree
