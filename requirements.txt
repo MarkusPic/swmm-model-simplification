@@ -1,15 +1,16 @@
 swmm-api[full]
 # which includes
-# - pandas
+pandas>=2.0
 # - numpy
 # - tqdm
-shapely
-geopandas
-networkx
-scipy
+shapely  # for polygon aggregation
+# geopandas>=1.0  # only for export
+networkx  # multiple network analysis
+scipy  # for function minimize_scalar to calibrate SC-flow-width
 
-fastparquet
-matplotlib
-SWMM_xsections_shape_generator
-pyproj
-Rtree
+# matplotlib only for evaluation
+# SWMM_xsections_shape_generator # maybe indirect from swmm-api
+# pyproj  # only for geopandas
+
+# permetrics  # only for evaluation
+scikit-learn  # sklearn  # for remodelling aggregated polygons

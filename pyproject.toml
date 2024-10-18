@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "swmm-model-simplification"
+description = "Skrip for simplifying a high-resolution SWMM model."
+readme = "README.md"
+authors = [
+    { name = "Markus Pichler", email = "markus.pichler@tugraz.at" }
+]
+requires-python = ">=3.11"
+keywords = ["swmm", "environment", "civil_engineering", "aggregation"]
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Hydrology",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "pandas>=2",  # and its requirement "numpy"
+    "tqdm",
+    "swmm-api",
+    "shapely",
+    "networkx",
+    "scipy"
+]
+
+[project.urls]
+Documentation = "https://doi.org/10.2166/wst.2024.337"
+homepage = "https://github.com/MarkusPic/swmm-model-simplification"
+
+[tool.black]
+line-length = 140
+target-version = ['py311']
+#include = '\.pyi?$'
