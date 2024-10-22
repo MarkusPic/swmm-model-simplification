@@ -259,7 +259,6 @@ def cut_network(
         elif any(_suc):
             # should not happen ...
             # node will not be converted
-            # TODO G61F120 for bellinge
             logging_func_(
                 f'ERROR: downstream nodes of node "{n}" are in the network, but not all'
             )

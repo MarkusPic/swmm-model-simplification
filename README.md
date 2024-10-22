@@ -27,6 +27,8 @@ The main sequence of the functions called is:
 
 `simplifying_model` > `consolidate_conduits` > `aggregate_subcatchments` > `calibrate_conduits` > `calibrate_subcatchments`
 
+For documentation please read the comments in the code and the function headers.
+
 ---
 
 ## Possible extension:
