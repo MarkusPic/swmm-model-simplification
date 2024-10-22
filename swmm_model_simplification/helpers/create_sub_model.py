@@ -1,3 +1,5 @@
+from itertools import permutations
+
 from swmm_api import SwmmInput
 from swmm_api.input_file import SEC
 from swmm_api.input_file.macros import (
@@ -7,7 +9,7 @@ from swmm_api.input_file.macros import (
     storage_to_outfall,
     create_sub_inp,
     subcatchments_connected,
-    delete_subcatchment,
+    delete_subcatchment, delete_link,
 )
 from swmm_api.input_file.sections import (
     Outfall,
@@ -196,12 +198,15 @@ def cut_network(
     while _queue:
         # next node in queue
         node = _queue.pop()
-        if (node != downstream_node) and (node in outfall_list):
+        # if (node != downstream_node) and (node in outfall_list):
+        if node in outfall_list:
             # if node is not the node of interest and in the outfall-list - remove the node from that list.
             # logging_func_(f"{node} x outfall_list")
+            # print(f"{node} x outfall_list")
             outfall_list.remove(node)
 
         # logging_func_(f"{node} > nodes_list")
+        # print(f"{node} > nodes_list")
         nodes_list.append(node)
 
         # add successors to outfall_list
@@ -209,13 +214,15 @@ def cut_network(
         for _node_downstream in graph.successors(node):
             # except if the node is already in node_list or is downstream_node
             if (_node_downstream not in nodes_list) and (
-                _node_downstream not in outfall_list
+                    _node_downstream not in outfall_list
             ):
                 # logging_func_(f"{_node_downstream} > outfall_list")
+                # print(f"{_node_downstream} > outfall_list")
                 outfall_list.append(_node_downstream)
 
         # add all upstream nodes of the current node to the queue of nodes that should be included in the cut-out model.
         if node in dict_pre_calculated_ts_:
+            # print(f"{node} is already in dict_pre_calculated_ts_")
             ...
         else:
             _queue += list(graph.predecessors(node))
@@ -226,6 +233,15 @@ def cut_network(
     inp_part = create_sub_inp(inp.copy(), nodes_list + outfall_list)
     logging_func_("create new network")
     graph_part = inp_to_graph(inp_part)
+
+    # delete links between outfall_list nodes
+    for possible_link in permutations(outfall_list, 2):
+        if possible_link in graph_part.edges:
+            # break
+            illicit_link_label = graph_part.edges[possible_link]['label']
+            delete_link(inp_part, illicit_link_label)
+            graph_part.remove_edge(*possible_link)
+
     nodes = nodes_dict(inp_part)
     # ---
     # set most downstream nodes as outfall
@@ -243,6 +259,7 @@ def cut_network(
         elif any(_suc):
             # should not happen ...
             # node will not be converted
+            # TODO G61F120 for bellinge
             logging_func_(
                 f'ERROR: downstream nodes of node "{n}" are in the network, but not all'
             )

@@ -53,13 +53,13 @@ def aggregate_model(
     Args:
         inp_hd (SwmmInput): SWMM input data.
         area_min (int | float):
-        length_max (int | float):
-        skip_optimisation (bool):
+        length_max (int | float): longest path to combine into one conduit. If the path is longer, make equal long conduits with a maximum length of length_max.
+        skip_optimisation (bool): if `True` -> SC width and conduits are not calibrated on the HD model after aggregation and cosolidation. default `False`.
         write_sc_transformation_as_tag (bool): if the new tag of the SC should be the name of the SC that were aggregated.
-        logging_func (function): function used for logging some messages. Default: no messages logged.
-        optimize_volume (bool):
-        optimize_flow_full (bool):
-        optimize_flow_full_ratio (bool):
+        logging_func (optional | function): function used for logging some messages. Default: no messages logged.
+        optimize_volume (bool): when true - change the cross-section height to fit the volume of the consolidated conduit to the volume of the original path of conduit in the HD model.
+        optimize_flow_full (bool): when false - use the full flow rate of the first (most upstream) conduit of the HD path that was consolidated. when true - use the smallest (most limiting) full flow rate of the HD path.
+        optimize_flow_full_ratio (bool): when false - use the smallest full flow rate of the HD path. when true - use the smallest ratio of full flow rate and the connected catchment area to limit flow capacity.
     """
     inp = inp_hd.copy()
 
@@ -138,7 +138,7 @@ def aggregate_model(
                 last_node != node_current
             ):  # not in set(graph_with_sc.successors(last_node)):
                 log_sub("<combine_conduits_list - new path>")
-                combine_conduits_list = consolidate_conduits(
+                consolidate_conduits(
                     inp,
                     combine_conduits_list,
                     length_max,
@@ -147,6 +147,7 @@ def aggregate_model(
                     kwargs_optimize=kwargs_optimize,
                     write_sc_transformation_as_tag=write_sc_transformation_as_tag,
                 )
+                combine_conduits_list = []
 
                 if all(
                     n in nodes_done
@@ -308,7 +309,7 @@ def aggregate_model(
             not skip_combine_conduits
         ):  # while adding conduits to combine_conduits list -> skip this part
             log_sub("<combine_conduits_list inline>")
-            combine_conduits_list = consolidate_conduits(
+            consolidate_conduits(
                 inp,
                 combine_conduits_list,
                 length_max,
@@ -317,6 +318,7 @@ def aggregate_model(
                 kwargs_optimize=kwargs_optimize,
                 write_sc_transformation_as_tag=write_sc_transformation_as_tag,
             )
+            combine_conduits_list = []
 
             sc_connected_list = subcatchments_connected(
                 inp, node=node_current, graph=graph_with_sc

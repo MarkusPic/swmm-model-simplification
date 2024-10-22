@@ -1,10 +1,12 @@
 # SWMM Model Simplification
-Algorithm to simplify high resolution SWMM model using the python package swmm-api
 
-The code for this algorithm will be publicly available once the article is published.
-Additionally, the code for the figures in the article will be published here.
+Algorithm to simplify high resolution SWMM models using the python package [`swmm-api`](https://pypi.org/project/swmm-api/).
 
-[![DOI](https://img.shields.io/badge/doi-10.2166/wst.2024.337-white?logo=doi)](https://doi.org/10.2166/wst.2024.337)
+This is the code of the algorithm publish within this scientific article:
+
+Pichler, M., König, A. W., Reinstaller, S., & Muschalla, D. (2024). Fully automated simplification of urban drainage models on a city scale. Water Science & Technology. [![DOI](https://img.shields.io/badge/doi-10.2166/wst.2024.337-white?logo=doi)](https://doi.org/10.2166/wst.2024.337)
+
+This repository is structures as followed:
 
 - Main Script: `swmm_model_simplification.aggregate_model.aggregate_model()`
 - Folder [`helpers`](swmm_model_simplification/helpers) are functions which are needed in the main script.
@@ -21,11 +23,13 @@ Because every model is different and has its own peculiarities and therefore the
 
 ---
 
-simplifying_model > consolidate_conduits > aggregate_subcatchments >  > calibrate_conduits > calibrate_subcatchments
+The main sequence of the functions called is: 
+
+`simplifying_model` > `consolidate_conduits` > `aggregate_subcatchments` > `calibrate_conduits` > `calibrate_subcatchments`
 
 ---
 
-## ToDo's:
+## Possible extension:
 
 - arrow multiple metrics for width calibration (as function in config)
-  - must replace function calibrate_subcatchments()
+  - must replace function `calibrate_subcatchments()`

@@ -272,9 +272,9 @@ def aggregate_subcatchments(
 
 
 def calibrate_subcatchments(
+    node: str,
     inp_agg: SwmmInput,
     inp_hd: SwmmInput,
-    node: str,
     graph_hd: nx.DiGraph,
     logging_func,
     current_ts_calculated_hd,
@@ -295,10 +295,10 @@ def calibrate_subcatchments(
     This function is currently fixed on metric units.
 
     Args:
+        node (str): label of the node
         inp_agg (SwmmInput): SWMM input-file data of current state in simplification.
         inp_hd (SwmmInput): SWMM input-file data of the original HD model.
-        node (str): label of the node
-        graph_hd (nx.DiGraph):
+        graph_hd (nx.DiGraph): A graph of the full (uncut) model network.
         logging_func (function): function used for logging some messages. Default: no messages logged.
         current_ts_calculated_hd (dict[str: pd.Series]): Flow timeseries in nodes if HD model calculated previously; with key=node_label and value=pd.Series of total_node_inflow.
         current_ts_calculated_agg (dict[str: pd.Series]): Flow timeseries in nodes if AGG model calculated previously; with key=node_label and value=pd.Series of total_node_inflow.
@@ -308,9 +308,9 @@ def calibrate_subcatchments(
         link_full_flow_hd (dict[str, float]): The full flow rate for all conduits in the model.
         link_cross_section_area_hd (dict[str, float]): The cross-section area for all conduits in the model.
         link_cumulative_catchment_area_hd (dict[str, float]): The cumulative catchment area for each link in the network.
-        optimize_volume (bool):
-        optimize_flow_full (bool):
-        optimize_flow_full_ratio (bool):
+        optimize_volume (bool): when true - change the cross-section height to fit the volume of the consolidated conduit to the volume of the original path of conduit in the HD model.
+        optimize_flow_full (bool): when false - use the full flow rate of the first (most upstream) conduit of the HD path that was consolidated. when true - use the smallest (most limiting) full flow rate of the HD path.
+        optimize_flow_full_ratio (bool): when false - use the smallest full flow rate of the HD path. when true - use the smallest ratio of full flow rate and the connected catchment area to limit flow capacity.
     """
     logging_func(f'Start optimize for node "{node}"')
 
@@ -320,7 +320,6 @@ def calibrate_subcatchments(
     # cut the network at previously calculated nodes
     # get the timeseries of the node inflow
     if node not in current_ts_calculated_hd:
-        # inp_hd_clip = split_network2(inp_hd.copy(), node, graph=graph_hd.copy(), logger_func=lambda x: logger_func_opt('HD: ' + x), current_ts_calculated=CURRENT_TS_CALCULATED_HD)
         inp_hd_clip = cut_network(
             inp_hd.copy(),
             node,
@@ -330,9 +329,11 @@ def calibrate_subcatchments(
         )
 
         # ------------------------------------
+        # only report on node of interest in the out-file
         inp_hd_clip.REPORT["NODES"] = node
 
         # set init_defizit 0
+        # = fully saturated -> worst case
         for i in inp_hd_clip.INFILTRATION.values():
             i.moisture_deficit_init = 0
 
@@ -341,28 +342,24 @@ def calibrate_subcatchments(
         ) as res:
             ts_hd = res.out.get_part(OBJECTS.NODE, node, VARIABLES.NODE.TOTAL_INFLOW)
 
+        # total node inflow rate as the timeseries used for flow width calibration
         current_ts_calculated_hd[node] = ts_hd
 
     ts_hd = current_ts_calculated_hd[node]
     # ------------------------------------
     # only use the upstream part of the network
     # cut the network at previously calculated nodes
-    # inp_agg_clip = split_network2(inp_agg.copy(), node, graph=None, logger_func=lambda x: logger_func_opt('AGG: ' + x), current_ts_calculated=CURRENT_TS_CALCULATED_AGG)
-    # upstream_nodes_list darf nicht <node> enthalten!!!
+    # using the timeseries of the HD model to not fix errors in the simplification downstream
     inp_agg_clip = cut_network(
         inp_agg.copy(),
         node,
         logging_func=lambda x: logging_func("AGG: " + x),
         dict_pre_calculated_ts=current_ts_calculated_hd,
-    )  # CURRENT_TS_CALCULATED_AGG
+    )
 
-    # if node == '17012':
-    #     inp_agg_clip.write_file('interim_17012_agg.inp')
-    #     write_geo_package(inp_agg_clip, PTH_CHIANTI_local_GIS / f'debugging_17012_agg.gpkg')
-    #     exit()
     # ------------------------------------
-    # optimize full flow
-    # optimize volume of links
+    # optimize full flow rate
+    # optimize volume of conduits
     calibrate_conduits_on_hd(
         inp_agg,
         inp_agg_clip,
@@ -385,6 +382,8 @@ def calibrate_subcatchments(
     if inp_agg.OPTIONS.is_imperial():  # # CFS*/GPM/MGD
         UNIT_AREA = 'acres'  # area of SC
         UNIT_LENGTH = 'ft'  # width of SC
+        # 1 Acre = 43_560 foot^2
+        LENGTH2_AREA = 43_560
     else:
         if UNIT_FLOW == 'LPS':
             UNIT_FLOW = 'L/s'
@@ -393,10 +392,14 @@ def calibrate_subcatchments(
         # MLD: million liters per day
         UNIT_AREA = 'ha'  # area of SC
         UNIT_LENGTH = 'm'  # width of SC
+        # 1 ha = 1e4 m2
+        LENGTH2_AREA = 1e4
 
     # ------------------------------------
+    # list of aggregated subcatchments directly connected to the node of interest
     sc_connected = subcatchments_connected(inp_agg_clip, node)
 
+    # only report on node of interest in the out-file
     inp_agg_clip.REPORT["NODES"] = node
 
     # set init_defizit 0 => doesn't change much
@@ -422,7 +425,7 @@ def calibrate_subcatchments(
         logging_func(f"areas = {areas} {UNIT_AREA}")
 
         ratio_l_w = {
-            sc.name: round(sc.area / sc.width**2 * 1e4, 1) for sc in sc_connected
+            sc.name: round(sc.area / sc.width**2 * LENGTH2_AREA, 1) for sc in sc_connected
         }
         logging_func(f"ratios FL/FW = {ratio_l_w}")
 
@@ -434,29 +437,28 @@ def calibrate_subcatchments(
         # TODO this node hase multiple SC connected
         # calculated FL/FW ratio and fix ratio between SC
         # manipulate smaller SC's width with this ratio
-        def prep_inp(inp, width):
+        def prep_inp(inp: SwmmInput, width: float):
             ratio_biggest_new = sc_biggest.area / width**2
             for sc in sc_connected:
                 ratio_length_by_width = ratios[sc.name] * ratio_biggest_new
-                # print((sc.area / ratio_length_by_width)**(1/2))
                 inp.SUBCATCHMENTS[sc.name].width = (sc.area / ratio_length_by_width) ** (1 / 2)
             return inp
 
     else:
-        try:
-            sc = sc_connected[0]
-        except:
-            print()
+        # there is only one SC directly connected to the node of interest
+        sc = sc_connected[0]
         width_old = sc.width
         area = sc.area
-        ratio_l_w = area / width_old**2 * 1e4
+
+        # ratio of flow length and flow width of the overland SC runoff
+        ratio_l_w = area / width_old**2 * LENGTH2_AREA
 
         logging_func(f"area = {area:6.2f} {UNIT_AREA} | ratio FL/FW = {ratio_l_w:0.1f}")
         logging_func(
             f"OLD:width = {width_old:6.2f} {UNIT_LENGTH} | HD:max = {ts_hd.max():0.2f} {UNIT_FLOW} | HD:sum = {ts_hd.sum():0.2f}"
         )
 
-        def prep_inp(inp, width):
+        def prep_inp(inp: SwmmInput, width: float):
             inp.SUBCATCHMENTS[f"SC_{node}"].width = width
             return inp
 
@@ -473,7 +475,7 @@ def calibrate_subcatchments(
             # TODO limit ratio for multiple SC
             pass
         else:
-            ratio_l_w_new = area / width ** 2 * 1e4
+            ratio_l_w_new = area / width ** 2 * LENGTH2_AREA
 
             if ratio_l_w_new < 0.9:
                 logging_func(
@@ -505,14 +507,16 @@ def calibrate_subcatchments(
     results = minimize_scalar(
         minimize_func, bracket=(width_old * 3 / 4, width_old), tol=1
     )
-    # "bracket" ist der jeweils erste und zweite iterationsschritt...
-    # tol = xtol => kleinster schritt für neue width
+    # "bracket" parameter is the first and second iteration value
+    # tol = xtol => the smallest step for the new width
 
     logging_func(f"{results.nfev} iterations needed for optimal width.")
 
     width_new = results.x
-    inp_agg = prep_inp(inp_agg, width=width_new)  # neue Modellbasis
-    inp_agg_clip = prep_inp(inp_agg_clip, width=width_new)  #
+
+    # set the new width for the model
+    prep_inp(inp_agg, width=width_new)
+    prep_inp(inp_agg_clip, width=width_new)
 
     # ----------
     logging_func(

@@ -6,13 +6,13 @@ Calculate regression metrics with a default value if all values are zero.
 """
 
 
-def all_values_are_zero(s: (np.array | pd.Series)) -> bool:
+def all_values_are_zero(s: (np.array or pd.Series)) -> bool:
     """True if all values are zero."""
     # s.round(1).eq(0).all()
     return np.all(np.round(s, 1) == 0)
 
 
-def both_arrays_are_all_zero(o: (np.array | pd.Series), s: (np.array | pd.Series)) -> bool:
+def both_arrays_are_all_zero(o: (np.array or pd.Series), s: (np.array or pd.Series)) -> bool:
     """True if all values of both arrays are zero."""
     return all_values_are_zero(o) and all_values_are_zero(s)
 
