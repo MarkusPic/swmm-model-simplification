@@ -5,7 +5,7 @@ import warnings
 import pandas as pd
 
 from swmm_api import SwmmInput, CONFIG
-from swmm_api.input_file.macros import *
+from swmm_api.input_file.macros import set_crs
 
 from swmm_model_simplification.simplifying_model import aggregate_model
 
@@ -65,7 +65,7 @@ def main():
     inp.OPTIONS.set_simulation_duration(pd.Timedelta(hours=2))
 
     # %%
-    inp_simple = aggregate_model(inp, logging_func=logger.debug, write_sc_transformation_as_tag=True)
+    inp_simple = aggregate_model(inp, area_min=5, length_max=400, logging_func=logger.debug, write_sc_transformation_as_tag=True)
     inp_simple.write_file('model_bellinge_simple.inp')
     # %%
 
