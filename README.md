@@ -33,5 +33,5 @@ For documentation please read the comments in the code and the function headers.
 
 ## Possible extension:
 
-- arrow multiple metrics for width calibration (as function in config)
+- allow multiple metrics for width calibration (as function in config)
   - must replace function `calibrate_subcatchments()`
