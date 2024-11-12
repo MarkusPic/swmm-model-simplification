@@ -35,3 +35,43 @@ For documentation please read the comments in the code and the function headers.
 
 - allow multiple metrics for width calibration (as function in config)
   - must replace function `calibrate_subcatchments()`
+
+---
+
+### Python Requirements
+
+Packages required for this program will be installed with pip during the installation process and can be seen in the [`requirements.txt`](requirements.txt) file.
+
+```mermaid
+flowchart TD
+    classDef missing stroke-dasharray: 5
+    joblib["joblib<br>1.3.2"]
+    networkx["networkx<br>3.1"]
+    numpy["numpy<br>1.26.1"]
+    packaging["packaging<br>24.1"]
+    pandas["pandas<br>2.2.3"]
+    python-dateutil["python-dateutil<br>2.8.2"]
+    pytz["pytz<br>2023.3.post1"]
+    scikit-learn["scikit-learn<br>1.3.1"]
+    scipy["scipy<br>1.11.3"]
+    shapely["shapely<br>2.0.2"]
+    six["six<br>1.16.0"]
+    swmm-api["swmm-api<br>0.4.58"]
+    threadpoolctl["threadpoolctl<br>3.2.0"]
+    tqdm["tqdm<br>4.67.0"]
+    tzdata["tzdata<br>2023.3"]
+    pandas -- "&ge;1.26.0" --> numpy
+    pandas -- "&ge;2.8.2" --> python-dateutil
+    pandas -- "&ge;2020.1" --> pytz
+    pandas -- "&ge;2022.7" --> tzdata
+    python-dateutil -- "&ge;1.5" --> six
+    scikit-learn -- "&ge;1.1.1" --> joblib
+    scikit-learn -- "&ge;1.17.3,&lt;2.0" --> numpy
+    scikit-learn -- "&ge;1.5.0" --> scipy
+    scikit-learn -- "&ge;2.0.0" --> threadpoolctl
+    scipy -- "&ge;1.21.6,&lt;1.28.0" --> numpy
+    shapely -- "&ge;1.14" --> numpy
+    swmm-api -- "any" --> packaging
+    swmm-api -- "any" --> pandas
+    swmm-api -- "any" --> tqdm
+```
