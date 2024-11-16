@@ -347,14 +347,12 @@ def aggregate_model(
     time_end = datetime.datetime.now()
 
     # add meta info in TITLE
-    inp[SEC.TITLE] = TitleSection(
-        inp[SEC.TITLE].to_inp_lines() + f"\nAggregated  model\n"
-                                        f"Area for simplification: {area_min}\n"
-                                        f"Length for simplification: {length_max}\n"
-                                        f"Auto-calibration: {'skipped' if skip_optimisation else ('conduit volume + ' if optimize_volume else '') + ('full flow rate' if optimize_flow_full else '') + ('full flow rate ratio' if optimize_flow_full_ratio else '')}\n"
-                                        f"Operating system: {sys.platform}\n"
-                                        f"Timestamp: {time_end}\n"
-                                        f"Simplification duration: {time_end - time_start}"
-    )
+    inp[SEC.TITLE].txt += (f"\nAggregated  model\n"
+                           f"Area for simplification: {area_min}\n"
+                           f"Length for simplification: {length_max}\n"
+                           f"Auto-calibration: {'skipped' if skip_optimisation else ('conduit volume + ' if optimize_volume else '') + ('full flow rate' if optimize_flow_full else '') + ('full flow rate ratio' if optimize_flow_full_ratio else '')}\n"
+                           f"Operating system: {sys.platform}\n"
+                           f"Timestamp: {time_end}\n"
+                           f"Simplification duration: {time_end - time_start}")
 
     return inp
