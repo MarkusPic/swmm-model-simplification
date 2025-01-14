@@ -27,7 +27,7 @@ def prep_run_input_summary(inp: SwmmInput):
     return inp_cpy
 
 
-def prep_run_links_to_conduit(inp: SwmmInput, roughness=0.0125, length=50):
+def prep_run_links_to_conduit(inp: SwmmInput, roughness=0.0125, length=1):
     """Delete Controls and convert orifices and weirs to conduits."""
     # length has no effect but must be set
     # roughness has a big effect and must be set accordingly
