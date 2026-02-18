@@ -2,10 +2,10 @@
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
-
 [project]
 name = "swmm-model-simplification"
-description = "Skrip for simplifying a high-resolution SWMM model."
+description = "Script for simplifying a high-resolution SWMM model."
+version = "0.1"
 readme = "README.md"
 authors = [
     { name = "Markus Pichler", email = "markus.pichler@tugraz.at" }
